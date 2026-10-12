@@ -17,3 +17,7 @@ spring:
     open-in-view: false
   jackson:
     property-naming-strategy: SNAKE_CASE
+
+jwt:
+  secret: ${JWT_SECRET}
+  expiration-minutes: ${JWT_EXPIRATION_MINUTES:60}
