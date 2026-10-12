@@ -1,0 +1,32 @@
+flight_id,airline,source_airport,destination_airport,source_city,destination_city,source_country,destination_country,distance_km,duration_minutes,price
+F001,Air Canada,YYZ,YVR,Toronto,Vancouver,Canada,Canada,3359,310,320
+F002,United,YYZ,ORD,Toronto,Chicago,Canada,USA,702,95,180
+F003,United,ORD,LAX,Chicago,Los Angeles,USA,USA,2805,260,240
+F004,Delta,YYZ,ATL,Toronto,Atlanta,Canada,USA,1190,135,210
+F005,Delta,ATL,LAX,Atlanta,Los Angeles,USA,USA,3110,275,260
+F006,Flair,YYZ,JFK,Toronto,New York,Canada,USA,590,90,90
+F007,JetBlue,JFK,DEN,New York,Denver,USA,USA,2620,280,110
+F008,Frontier,DEN,LAX,Denver,Los Angeles,USA,USA,1385,150,80
+F009,Air Canada,YVR,YYZ,Vancouver,Toronto,Canada,Canada,3359,285,310
+F010,Air Canada,YYZ,YUL,Toronto,Montreal,Canada,Canada,504,75,140
+F011,WestJet,YYC,YVR,Calgary,Vancouver,Canada,Canada,687,90,150
+F012,WestJet,YYZ,YYC,Toronto,Calgary,Canada,Canada,2702,250,260
+F013,Alaska,SEA,SFO,Seattle,San Francisco,USA,USA,1093,125,130
+F014,Alaska,YVR,SEA,Vancouver,Seattle,Canada,USA,192,55,120
+F015,United,SFO,LAX,San Francisco,Los Angeles,USA,USA,543,85,100
+F016,Air Canada,YUL,CDG,Montreal,Paris,Canada,France,5525,430,780
+F017,British Airways,YYZ,LHR,Toronto,London,Canada,UK,5705,420,850
+F018,Air France,LHR,CDG,London,Paris,UK,France,344,75,140
+F019,ANA,LAX,NRT,Los Angeles,Tokyo,USA,Japan,8815,705,1100
+F020,Aeromexico,MEX,LAX,Mexico City,Los Angeles,Mexico,USA,2500,240,230
+F021,Delta,JFK,ATL,New York,Atlanta,USA,USA,1222,150,150
+F022,United,ORD,DEN,Chicago,Denver,USA,USA,1424,165,170
+F023,American,JFK,LAX,New York,Los Angeles,USA,USA,3983,370,330
+F024,Air Canada,LAX,YVR,Los Angeles,Vancouver,USA,Canada,1747,170,210
+F025,Air Canada,YYZ,YYZ,Toronto,Toronto,Canada,Canada,0,0,0
+,United,ORD,SFO,Chicago,San Francisco,USA,USA,2970,280,200
+F026,Delta,ATL,,Atlanta,,USA,,1000,120,150
+F027,WestJet,YYC,YYZ,Calgary,Toronto,Canada,Canada,-2702,240,250
+F028,Porter,YYZ,YOW,Toronto,Ottawa,Canada,Canada,353,sixty,120
+F029,Air Canada,YVR,YYC,Vancouver,Calgary,Canada,Canada,687,80,0
+F030,United,ORD,JFK,Chicago,New York,USA,USA,1188,125,160,EXTRA
