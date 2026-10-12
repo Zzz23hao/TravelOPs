@@ -50,3 +50,43 @@ def test_file_over_size_limit_is_413(client, monkeypatch):
 
     assert response.status_code == 413
     assert response.json()["error"] == "FILE_TOO_LARGE"
+
+
+def test_list_by_source_is_sorted_by_price(client, repository, sample_flights):
+    repository.flights = sample_flights
+
+    response = client.get("/api/data/flights", params={"source": "yyz"})
+
+    assert response.status_code == 200
+    prices = [f["price"] for f in response.json()]
+    assert prices == sorted(prices)
+    assert {f["source_airport"] for f in response.json()} == {"YYZ"}
+
+
+def test_search_direct_flights(client, repository, sample_flights):
+    repository.flights = sample_flights
+
+    response = client.get("/api/data/flights/search", params={"from": "YYZ", "to": "ORD"})
+
+    assert [f["flight_id"] for f in response.json()] == ["F002"]
+
+
+def test_domestic_and_international_endpoints(client, repository, sample_flights):
+    repository.flights = sample_flights
+
+    assert len(client.get("/api/data/flights/domestic").json()) == 14
+    assert len(client.get("/api/data/flights/international").json()) == 10
+
+
+def test_unknown_sort_field_is_400(client):
+    response = client.get("/api/data/flights/domestic", params={"sort_by": "airline"})
+
+    assert response.status_code == 400
+    assert response.json()["error"] == "VALIDATION_FAILED"
+
+
+def test_malformed_airport_code_is_400(client):
+    response = client.get("/api/data/flights", params={"source": "TORONTO"})
+
+    assert response.status_code == 400
+    assert response.json()["error"] == "VALIDATION_FAILED"
