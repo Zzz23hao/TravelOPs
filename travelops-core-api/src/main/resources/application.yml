@@ -1,0 +1,19 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: travelops-core-api
+  # No defaults: a missing variable should stop startup, not silently point at localhost.
+  datasource:
+    url: ${DATABASE_URL}
+    username: ${DATABASE_USERNAME}
+    password: ${DATABASE_PASSWORD}
+  jpa:
+    # Flyway owns the schema; Hibernate only checks that entities match it.
+    hibernate:
+      ddl-auto: validate
+    # Lazy loading outside the service layer would hide N+1 queries behind the view.
+    open-in-view: false
+  jackson:
+    property-naming-strategy: SNAKE_CASE
