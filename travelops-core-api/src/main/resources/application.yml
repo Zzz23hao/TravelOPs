@@ -21,3 +21,8 @@ spring:
 jwt:
   secret: ${JWT_SECRET}
   expiration-minutes: ${JWT_EXPIRATION_MINUTES:60}
+
+analytics:
+  base-url: ${ANALYTICS_API_URL}
+  connect-timeout: 2s
+  read-timeout: 2s
