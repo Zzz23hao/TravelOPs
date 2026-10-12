@@ -2,6 +2,7 @@
 
 import logging
 
+import psycopg
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
@@ -40,6 +41,12 @@ def register_error_handlers(app: FastAPI) -> None:
     @app.exception_handler(StarletteHTTPException)
     async def handle_http(request: Request, exc: StarletteHTTPException) -> JSONResponse:
         return _error(exc.status_code, _HTTP_CODES.get(exc.status_code, "HTTP_ERROR"), str(exc.detail))
+
+    # Postgres unreachable is a dependency outage, not a bug in this service: 503, so callers may retry.
+    @app.exception_handler(psycopg.OperationalError)
+    async def handle_database_down(request: Request, exc: psycopg.OperationalError) -> JSONResponse:
+        logger.error("Database unavailable: %s", exc)
+        return _error(503, "DATABASE_UNAVAILABLE", "Flight database is temporarily unavailable.")
 
     # Unexpected failures are logged with their stack trace but never leaked to the client.
     @app.exception_handler(Exception)
