@@ -1,5 +1,6 @@
 package com.travelops.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 
@@ -24,11 +25,13 @@ public record RouteSearchResponse(
         Integer transfers) {
 
     /** Boxed types so a missing field arrives as null and can be detected here. */
+    @JsonIgnore // otherwise Jackson treats isComplete() as a "complete" property and adds it to the JSON
     public boolean isComplete() {
         return from != null && to != null && route != null && !route.isEmpty()
                 && totalDistanceKm != null && totalDurationMinutes != null && totalPrice != null && transfers != null;
     }
 
+    @JsonIgnore
     public String summary() {
         return String.join(">", route) + " | " + totalDistanceKm + " km | " + totalDurationMinutes + " min | "
                 + totalPrice + " | " + transfers + " transfer(s)";
