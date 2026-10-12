@@ -27,5 +27,21 @@ services:
       postgres:
         condition: service_healthy
 
+  analytics-api:
+    build: ./travelops-analytics-api
+    ports:
+      - "8001:8001"
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      # The slim image has no curl; use the Python that is already there.
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
 volumes:
   pgdata:

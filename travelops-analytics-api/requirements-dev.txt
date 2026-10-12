@@ -1,0 +1,4 @@
+-r requirements.txt
+pytest==9.1.1
+# Starlette's TestClient is built on this client.
+httpx2==2.12.0
