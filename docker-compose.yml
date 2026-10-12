@@ -23,6 +23,9 @@ services:
       DATABASE_USERNAME: ${POSTGRES_USER}
       DATABASE_PASSWORD: ${POSTGRES_PASSWORD}
       JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
+      # Service name as hostname: inside a container, localhost would be core-api itself.
+      ANALYTICS_API_URL: http://analytics-api:8001
+    # No depends_on analytics-api on purpose: posts and auth must keep working while route search is down.
     depends_on:
       postgres:
         condition: service_healthy
