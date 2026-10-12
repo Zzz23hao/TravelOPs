@@ -4,8 +4,10 @@ import com.travelops.dto.PostCreateRequest;
 import com.travelops.dto.PostResponse;
 import com.travelops.dto.PostUpdateRequest;
 import com.travelops.entity.Post;
+import com.travelops.entity.User;
 import com.travelops.exception.ApiException;
 import com.travelops.repository.PostRepository;
+import com.travelops.repository.UserRepository;
 import com.travelops.service.PostService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -20,6 +22,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
 import java.util.Optional;
@@ -34,25 +37,46 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class PostServiceTest {
 
+    private static final Long ALICE_ID = 1L;
+    private static final Long BOB_ID = 2L;
+
     @Mock
     private PostRepository postRepository;
 
+    @Mock
+    private UserRepository userRepository;
+
     private PostService postService;
+    private User alice;
 
     @BeforeEach
     void setUp() {
-        postService = new PostService(postRepository);
+        postService = new PostService(postRepository, userRepository);
+        alice = user(ALICE_ID, "Alice");
     }
 
     @Test
-    void createStripsWhitespaceAndSaves() {
+    void createAssignsTheCallerAsAuthorAndStripsWhitespace() {
+        when(userRepository.findById(ALICE_ID)).thenReturn(Optional.of(alice));
         when(postRepository.save(any(Post.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        PostResponse response = postService.create(
+        PostResponse response = postService.create(ALICE_ID,
                 new PostCreateRequest("  Three Days in Vancouver ", "Day 1: Stanley Park", " Vancouver ", "Canada"));
 
         assertThat(response.title()).isEqualTo("Three Days in Vancouver");
         assertThat(response.destinationCity()).isEqualTo("Vancouver");
+        assertThat(response.authorId()).isEqualTo(ALICE_ID);
+        assertThat(response.authorName()).isEqualTo("Alice");
+    }
+
+    @Test
+    void createForDeletedUserReturns401InsteadOfForeignKeyError() {
+        when(userRepository.findById(ALICE_ID)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> postService.create(ALICE_ID, new PostCreateRequest("T", "C", "City", "Country")))
+                .isInstanceOf(ApiException.class)
+                .satisfies(ex -> assertThat(((ApiException) ex).getStatus()).isEqualTo(HttpStatus.UNAUTHORIZED));
+        verify(postRepository, never()).save(any());
     }
 
     @Test
@@ -69,12 +93,12 @@ class PostServiceTest {
     }
 
     @Test
-    void updateChangesOnlyProvidedFields() {
-        Post existing = new Post("Old title", "Old content", "Vancouver", "Canada");
-        when(postRepository.findById(1L)).thenReturn(Optional.of(existing));
+    void ownerCanUpdateAndOnlyProvidedFieldsChange() {
+        Post existing = alicesPost();
+        when(postRepository.findById(10L)).thenReturn(Optional.of(existing));
         when(postRepository.saveAndFlush(existing)).thenReturn(existing);
 
-        PostResponse response = postService.update(1L, new PostUpdateRequest("New title", null, null, null));
+        PostResponse response = postService.update(10L, ALICE_ID, new PostUpdateRequest("New title", null, null, null));
 
         assertThat(response.title()).isEqualTo("New title");
         assertThat(response.content()).isEqualTo("Old content");
@@ -82,10 +106,44 @@ class PostServiceTest {
     }
 
     @Test
-    void deleteMissingPostThrowsNotFoundAndDeletesNothing() {
+    void nonOwnerCannotUpdate() {
+        Post existing = alicesPost();
+        when(postRepository.findById(10L)).thenReturn(Optional.of(existing));
+
+        assertThatThrownBy(() -> postService.update(10L, BOB_ID, new PostUpdateRequest("Hijacked", null, null, null)))
+                .isInstanceOf(ApiException.class)
+                .satisfies(ex -> assertThat(((ApiException) ex).getStatus()).isEqualTo(HttpStatus.FORBIDDEN));
+        assertThat(existing.getTitle()).isEqualTo("Old title");
+        verify(postRepository, never()).saveAndFlush(any());
+    }
+
+    @Test
+    void ownerCanDelete() {
+        Post existing = alicesPost();
+        when(postRepository.findById(10L)).thenReturn(Optional.of(existing));
+
+        postService.delete(10L, ALICE_ID);
+
+        verify(postRepository).delete(existing);
+    }
+
+    @Test
+    void nonOwnerCannotDelete() {
+        when(postRepository.findById(10L)).thenReturn(Optional.of(alicesPost()));
+
+        assertThatThrownBy(() -> postService.delete(10L, BOB_ID))
+                .isInstanceOf(ApiException.class)
+                .satisfies(ex -> assertThat(((ApiException) ex).getCode()).isEqualTo("FORBIDDEN"));
+        verify(postRepository, never()).delete(any(Post.class));
+    }
+
+    @Test
+    void deleteMissingPostIs404EvenForNonOwner() {
         when(postRepository.findById(7L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> postService.delete(7L)).isInstanceOf(ApiException.class);
+        assertThatThrownBy(() -> postService.delete(7L, BOB_ID))
+                .isInstanceOf(ApiException.class)
+                .satisfies(ex -> assertThat(((ApiException) ex).getStatus()).isEqualTo(HttpStatus.NOT_FOUND));
         verify(postRepository, never()).delete(any(Post.class));
     }
 
@@ -110,5 +168,15 @@ class PostServiceTest {
         assertThatThrownBy(() -> postService.list(null, null, 0, 20, "password_desc"))
                 .isInstanceOf(ApiException.class)
                 .hasMessageContaining("sort must be one of");
+    }
+
+    private Post alicesPost() {
+        return new Post(alice, "Old title", "Old content", "Vancouver", "Canada");
+    }
+
+    private static User user(Long id, String name) {
+        User user = new User(name.toLowerCase() + "@example.com", "hash", name);
+        ReflectionTestUtils.setField(user, "id", id);
+        return user;
     }
 }

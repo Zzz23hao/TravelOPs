@@ -4,11 +4,13 @@ import com.travelops.dto.PageResponse;
 import com.travelops.dto.PostCreateRequest;
 import com.travelops.dto.PostResponse;
 import com.travelops.dto.PostUpdateRequest;
+import com.travelops.security.AuthUser;
 import com.travelops.service.PostService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -32,8 +34,9 @@ public class PostController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public PostResponse create(@Valid @RequestBody PostCreateRequest request) {
-        return postService.create(request);
+    public PostResponse create(@AuthenticationPrincipal AuthUser user,
+                               @Valid @RequestBody PostCreateRequest request) {
+        return postService.create(user.id(), request);
     }
 
     @GetMapping
@@ -52,13 +55,14 @@ public class PostController {
     }
 
     @PatchMapping("/{id}")
-    public PostResponse update(@PathVariable Long id, @Valid @RequestBody PostUpdateRequest request) {
-        return postService.update(id, request);
+    public PostResponse update(@AuthenticationPrincipal AuthUser user, @PathVariable Long id,
+                               @Valid @RequestBody PostUpdateRequest request) {
+        return postService.update(id, user.id(), request);
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable Long id) {
-        postService.delete(id);
+    public void delete(@AuthenticationPrincipal AuthUser user, @PathVariable Long id) {
+        postService.delete(id, user.id());
     }
 }

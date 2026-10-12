@@ -10,6 +10,8 @@ public record PostResponse(
         String content,
         String destinationCity,
         String destinationCountry,
+        Long authorId,
+        String authorName,
         Instant createdAt,
         Instant updatedAt) {
 
@@ -20,6 +22,8 @@ public record PostResponse(
                 post.getContent(),
                 post.getDestinationCity(),
                 post.getDestinationCountry(),
+                post.getAuthor().getId(),
+                post.getAuthor().getName(),
                 post.getCreatedAt(),
                 post.getUpdatedAt());
     }

@@ -5,9 +5,11 @@ import com.travelops.dto.PostCreateRequest;
 import com.travelops.dto.PostResponse;
 import com.travelops.dto.PostUpdateRequest;
 import com.travelops.entity.Post;
+import com.travelops.entity.User;
 import com.travelops.exception.ApiException;
 import com.travelops.repository.PostRepository;
 import com.travelops.repository.PostSpecifications;
+import com.travelops.repository.UserRepository;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
@@ -26,14 +28,21 @@ public class PostService {
             "createdAt_asc", Sort.by(Sort.Direction.ASC, "createdAt").and(Sort.by(Sort.Direction.ASC, "id")));
 
     private final PostRepository postRepository;
+    private final UserRepository userRepository;
 
-    public PostService(PostRepository postRepository) {
+    public PostService(PostRepository postRepository, UserRepository userRepository) {
         this.postRepository = postRepository;
+        this.userRepository = userRepository;
     }
 
     @Transactional
-    public PostResponse create(PostCreateRequest request) {
+    public PostResponse create(Long userId, PostCreateRequest request) {
+        // The token can outlive its user; without this check the insert would fail on the foreign key as a 500.
+        User author = userRepository.findById(userId)
+                .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED",
+                        "User account no longer exists."));
         Post post = new Post(
+                author,
                 request.title().strip(),
                 request.content(),
                 request.destinationCity().strip(),
@@ -67,8 +76,8 @@ public class PostService {
     }
 
     @Transactional
-    public PostResponse update(Long id, PostUpdateRequest request) {
-        Post post = findOrThrow(id);
+    public PostResponse update(Long id, Long userId, PostUpdateRequest request) {
+        Post post = findOwnedOrThrow(id, userId);
         if (request.title() != null) {
             post.setTitle(request.title().strip());
         }
@@ -86,8 +95,17 @@ public class PostService {
     }
 
     @Transactional
-    public void delete(Long id) {
-        postRepository.delete(findOrThrow(id));
+    public void delete(Long id, Long userId) {
+        postRepository.delete(findOwnedOrThrow(id, userId));
+    }
+
+    // 404 is checked before 403: posts are public, so confirming that one exists leaks nothing.
+    private Post findOwnedOrThrow(Long id, Long userId) {
+        Post post = findOrThrow(id);
+        if (!post.getAuthor().getId().equals(userId)) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "FORBIDDEN", "Only the author can modify this post.");
+        }
+        return post;
     }
 
     private Post findOrThrow(Long id) {

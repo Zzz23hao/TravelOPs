@@ -22,7 +22,9 @@ import java.util.List;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -152,11 +154,21 @@ class PostControllerTest {
     }
 
     @Test
-    void createWithTokenReachesService() throws Exception {
-        when(postService.create(any())).thenReturn(null);
-
-        mockMvc.perform(post("/api/posts").header(HttpHeaders.AUTHORIZATION, bearer())
+    void createPassesTheTokenSubjectAsAuthor() throws Exception {
+        mockMvc.perform(post("/api/posts").header(HttpHeaders.AUTHORIZATION, "Bearer " + jwtService.generateToken(7L))
                         .contentType(MediaType.APPLICATION_JSON).content(VALID_BODY))
                 .andExpect(status().isCreated());
+        verify(postService).create(eq(7L), any());
+    }
+
+    @Test
+    void nonOwnerPatchReturns403WithTypedErrorBody() throws Exception {
+        when(postService.update(eq(1L), eq(1L), any())).thenThrow(
+                new ApiException(HttpStatus.FORBIDDEN, "FORBIDDEN", "Only the author can modify this post."));
+
+        mockMvc.perform(patch("/api/posts/1").header(HttpHeaders.AUTHORIZATION, bearer())
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"title\": \"x\"}"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error").value("FORBIDDEN"));
     }
 }
